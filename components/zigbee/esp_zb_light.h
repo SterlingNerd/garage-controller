@@ -46,3 +46,6 @@
     {                                                           \
         .host_connection_mode = ZB_HOST_CONNECTION_MODE_NONE,   \
     }
+
+/* Function declarations */
+void esp_zb_light_init(void);
