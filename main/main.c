@@ -17,7 +17,8 @@
 #include "esp_check.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-#include "esp_zb_light.h"
+#include "zigbee_manager.h"
+#include "light_control.h"
 
 static const char *TAG = "GARAGE_CONTROLLER";
 
@@ -28,8 +29,12 @@ void app_main(void)
     // Initialize NVS
     ESP_ERROR_CHECK(nvs_flash_init());
 
-    // Initialize Zigbee communication
-    esp_zb_light_init();
+    // Initialize light control system
+    const light_control_ops_t* light_ops = light_control_get_ops();
+    ESP_ERROR_CHECK(light_ops->init());
+
+    // Initialize Zigbee communication (includes sensor manager)
+    zigbee_manager_init();
 
     ESP_LOGI(TAG, "Garage Door Controller initialized");
 }

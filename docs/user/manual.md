@@ -47,6 +47,12 @@ The Garage Door Controller provides smart home integration for traditional garag
 
 ## Troubleshooting
 
+### LED Not Working
+1. Check GPIO pin configuration matches your hardware
+2. Verify LED strip has proper 5V power supply
+3. Ensure LED data line is connected to correct GPIO pin
+4. Check Zigbee network connectivity for remote control
+
 ### Door Not Responding
 1. Check power connection
 2. Verify Zigbee network connectivity
@@ -56,6 +62,13 @@ The Garage Door Controller provides smart home integration for traditional garag
 1. Verify sensor connections
 2. Check calibration
 3. Review error logs
+4. DHT22 sensors may show checksum errors in humid environments
+
+### Build Issues
+1. Ensure ESP-IDF environment is properly configured
+2. Check for missing component dependencies
+3. Verify GPIO pin assignments match your hardware
+4. Run `idf.py clean` after changing configurations
 
 ## Maintenance
 

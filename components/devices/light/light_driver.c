@@ -39,24 +39,41 @@
 #include "led_strip.h"
 #include "light_driver.h"
 
+static const char *TAG = "LIGHT_DRIVER";
 static led_strip_handle_t s_led_strip;
 static uint8_t s_red = 255, s_green = 255, s_blue = 255;
 
+static led_strip_handle_t s_led_strip;
+
 void light_driver_set_power(bool power)
 {
-    ESP_ERROR_CHECK(led_strip_set_pixel(s_led_strip, 0, s_red * power, s_green * power, s_blue * power));
+    uint8_t r = s_red * power;
+    uint8_t g = s_green * power;
+    uint8_t b = s_blue * power;
+
+    ESP_ERROR_CHECK(led_strip_set_pixel(s_led_strip, 0, r, g, b));
     ESP_ERROR_CHECK(led_strip_refresh(s_led_strip));
+
+    ESP_LOGI(TAG, "LED set to R:%d G:%d B:%d (power:%s)", r, g, b, power ? "ON" : "OFF");
 }
 
 void light_driver_init(bool power)
 {
+    ESP_LOGI(TAG, "Initializing RMT-based LED driver on pin %d", CONFIG_EXAMPLE_STRIP_LED_GPIO);
+
     led_strip_config_t led_strip_conf = {
         .max_leds = CONFIG_EXAMPLE_STRIP_LED_NUMBER,
         .strip_gpio_num = CONFIG_EXAMPLE_STRIP_LED_GPIO,
     };
+
     led_strip_rmt_config_t rmt_conf = {
         .resolution_hz = 10 * 1000 * 1000, // 10MHz
     };
+
     ESP_ERROR_CHECK(led_strip_new_rmt_device(&led_strip_conf, &rmt_conf, &s_led_strip));
-    light_driver_set_power(power);
+
+    // Start with LED off
+    light_driver_set_power(false);
+
+    ESP_LOGI(TAG, "LED driver initialized successfully");
 }

@@ -1,79 +1,10 @@
 # Agent Configuration Notes
 
-## ESP-IDF Tool Paths and Environment Setup
+## ⚠️ CRITICAL: IDF.py Command Execution
 
-This ESP-IDF project uses ESP-IDF v5.5.1 with custom tool installations. All tools are located in the `.espressif` directory structure.
-
-### Python Environment Setup
-
-This ESP-IDF project uses Python 3.11.2. There are multiple Python installations available:
-
-**Working Python executable (confirmed for builds):**
-```
-C:\code\esp\tools\.espressif\tools\idf-python\3.11.2\python.exe
-```
-
-**Alternative Python path (may exist but not working for builds):**
-```
-C:\code\esp\tools\.espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe
-```
-
-**Important for Agents/AI Assistants:**
-- The `python` command may not be available directly due to Windows app execution aliases being disabled (security best practice)
-- Always use the full path when testing Python: `& "C:\code\esp\tools\.espressif\tools\idf-python\3.11.2\python.exe" --version`
-- The Python environment is properly configured in the user's PATH but requires full path invocation for direct command line usage
-- Version: Python 3.11.2 (ESP-IDF v5.5.1 environment)
-
-### ESP-IDF Build Tools
-
-**ESP-IDF Installation Path:**
-```
-C:\code\esp\v5.5.1\esp-idf
-```
-
-**CMake:**
-```
-C:\code\esp\tools\.espressif\tools\cmake\3.30.2\bin\cmake.exe
-```
-
-**Ninja:**
-```
-C:\code\esp\tools\.espressif\tools\ninja\1.12.1\ninja.exe
-```
-
-**CCache (for faster recompilation):**
-```
-C:\code\esp\tools\.espressif\tools\ccache\4.11.2\ccache-4.11.2-windows-x86_64\ccache.exe
-```
-
-### Manual Build Environment Setup
-
-When the standard `idf.py build` command fails due to environment issues, use this manual setup:
-
-**PowerShell Environment Variables:**
-```powershell
-$env:PATH = "C:\code\esp\tools\.espressif\tools\cmake\3.30.2\bin;C:\code\esp\tools\.espressif\tools\ninja\1.12.1;C:\code\esp\tools\.espressif\tools\idf-python\3.11.2;C:\code\esp\tools\.espressif\tools\ccache\4.11.2\ccache-4.11.2-windows-x86_64;" + $env:PATH
-$env:IDF_PATH = "C:\code\esp\v5.5.1\esp-idf"
-$env:IDF_TARGET = "esp32c6"
-```
-
-**Configure Build:**
-```powershell
-& "C:\code\esp\tools\.espressif\tools\cmake\3.30.2\bin\cmake.exe" -S . -B build -G Ninja
-```
-
-**Build Project:**
-```powershell
-& "C:\code\esp\tools\.espressif\tools\ninja\1.12.1\ninja.exe" -C build
-```
-
-**Clean Build:**
-```powershell
-Remove-Item -Recurse -Force build
-```
+**When executing any `idf.py` commands (set-target, build, flash, monitor, etc.), the AI assistant must PAUSE and instruct the user to run the commands manually. Do NOT run `idf.py` commands directly.**
 
 ### Zigbee Component Dependencies
-
 This project requires specific Zigbee components that must be included in CMakeLists.txt:
 
 **Required Components in main/CMakeLists.txt PRIV_REQUIRES:**
@@ -85,9 +16,88 @@ This project requires specific Zigbee components that must be included in CMakeL
 - `espressif/esp-zboss-lib: "~1.6.0"`
 - `espressif/esp-zigbee-lib: "~1.6.0"`
 
+### Environment Setup
+
+
+#### Build Commands
+
+**Standard ESP-IDF workflow:**
+```bash
+idf.py set-target esp32c6
+idf.py clean
+idf.py build
+idf.py flash
+idf.py monitor
+```
+
 ### Troubleshooting Notes
 
-- When `idf.py` fails with "No module named 'click'", use the manual cmake/ninja build process above
-- Missing `zcl_utility.h` indicates the custom `zcl_utility` component needs to be created (see components/zcl_utility/)
-- ESP-IDF export scripts may fail due to missing ESP_ROM_ELF_DIR environment variable, but manual builds work fine
 - Always verify component dependencies are properly included in both idf_component.yml and CMakeLists.txt PRIV_REQUIRES
+- If you get compilation errors about missing headers (like esp_timer.h), add the required component to PRIV_REQUIRES in CMakeLists.txt
+
+## ⚠️ CRITICAL: Component Refactoring Checklist
+
+**When combining, renaming, or removing ESP-IDF components, update ALL CMakeLists.txt files that reference them:**
+
+### Required Updates:
+1. **Component's own CMakeLists.txt**: Update SRCS, INCLUDE_DIRS, and PRIV_REQUIRES to reflect the new structure
+2. **Main CMakeLists.txt**: Update INCLUDE_DIRS and PRIV_REQUIRES to reference the new component name
+3. **ALL dependent component CMakeLists.txt**: Update any components that depend on the renamed/removed component
+4. **Test build immediately**: Run `idf.py build` after changes to catch missing dependencies
+
+### Common Failure Points:
+- Zigbee component often depends on sensor components
+- Light components may depend on device drivers
+- Main application component references most other components
+
+**Example**: When combining `sensor_interface` into `sensor_manager`, update:
+- `components/sensor_manager/CMakeLists.txt` (combine SRCS and dependencies)
+- `main/CMakeLists.txt` (change sensor_interface → sensor_manager)
+- `components/zigbee/CMakeLists.txt` (remove sensor_interface dependency)
+
+## ⚠️ CRITICAL: ESP-IDF Terminal Usage
+
+**AI assistants MUST NOT attempt manual builds with cmake/ninja. All ESP-IDF builds must use `idf.py` commands within a proper ESP-IDF terminal.**
+
+### Why Manual CMake/Ninja Builds Fail
+
+ESP-IDF projects cannot be built using direct `cmake` and `ninja` commands because:
+
+1. **Environment Variables Missing**: ESP-IDF requires specific environment variables (IDF_PATH, IDF_TARGET, etc.) that are only set in ESP-IDF terminals
+2. **Python Path Issues**: The ESP-IDF Python environment is not accessible via standard `python` commands
+3. **Toolchain Configuration**: ESP-IDF tools require specific PATH configurations that are only available in ESP-IDF terminals
+4. **Component Registration**: ESP-IDF's component system requires proper initialization that only happens in ESP-IDF terminals
+
+### ESP-IDF Terminal Requirements
+
+**ALL `idf.py` commands must be executed in a proper ESP-IDF terminal:**
+
+- Use ESP-IDF Command Prompt (Windows)
+- Use `idf.py` terminal command (Linux/Mac)
+- Do NOT use regular PowerShell/Command Prompt terminals
+- Do NOT use manual cmake/ninja invocations
+
+### Correct Build Process
+
+1. **Open ESP-IDF Terminal**: Launch proper ESP-IDF command environment
+2. **Navigate to Project**: `cd C:\code\garage-controller`
+3. **Configure Target**: `idf.py set-target esp32c6`
+4. **Build**: `idf.py build`
+5. **Flash**: `idf.py flash`
+6. **Monitor**: `idf.py monitor`
+
+### What Happens When You Try Manual Builds
+
+When AI assistants attempt manual cmake/ninja builds, you will encounter:
+- "CMake Error: Could not find CMAKE_CXX_COMPILER"
+- "No module named 'click'" errors
+- Missing ESP-IDF component dependencies
+- Undefined symbols and linker errors
+- Build failures due to missing environment variables
+
+### AI Assistant Instructions
+
+- **NEVER** run `idf.py` commands directly in tools
+- **ALWAYS** instruct user to run `idf.py` commands manually in ESP-IDF terminal
+- **NEVER** use manual cmake/ninja commands
+- **ALWAYS** remind user that ESP-IDF builds require proper terminal environment
